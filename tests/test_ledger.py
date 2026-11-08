@@ -62,3 +62,20 @@ r3 = analyze(without_sparse_layers(G))
 assert r3["sparse_layers_mm3"] == 0 and r3["tool_changes"] == 1, r3  # only the no-change layer's tower is dropped
 assert r3["object_total_g"] == r["object_total_g"] and r3["change_layer_walls_mm3"] == r["change_layer_walls_mm3"], r3
 print("ok")
+
+# Real files: the coaster (examples/coaster) sliced in Snapmaker Orca 2.4.1 with the sparse-layer key at 0 and 1.
+import gzip
+EV = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "evidence", "coaster")
+def real(name):
+    with gzip.open(os.path.join(EV, name), "rt", encoding="utf-8", errors="replace") as fh:
+        return analyze(fh.read().splitlines())
+k0, k1 = real("coaster-2.4.1-sparse0.gcode.gz"), real("coaster-2.4.1-sparse1.gcode.gz")
+assert (k0["no_sparse_layers_setting"], k1["no_sparse_layers_setting"]) == ("0", "1"), (k0, k1)
+assert k0["tool_changes"] == k1["tool_changes"] == 5, (k0["tool_changes"], k1["tool_changes"])
+assert (k0["sparse_layers"], k1["sparse_layers"]) == (25, 0), (k0["sparse_layers"], k1["sparse_layers"])  # 0.2..5.0 mm, logo starts at 5
+for k in (k0, k1):  # the ledger's total is the slicer's own trailer
+    assert abs(k["tower_total_g"] + k["object_total_g"] - k["slicer_total_g"]) < 0.011, k
+saved = k0["tower_total_g"] - k1["tower_total_g"]
+assert abs(saved - (k0["slicer_total_g"] - k1["slicer_total_g"])) < 0.02, (saved, k0["slicer_total_g"], k1["slicer_total_g"])  # the whole difference is the tower
+assert k1["sparse_layers_g"] == 0 and k0["sparse_layers_g"] > saved, (k0["sparse_layers_g"], saved)  # the key drops 1.1 g of upkeep and spends ~0.13 g more on the change layers' walls
+print("ok real coaster", k0["sparse_layers_g"], "g of sparse layers ->", round(saved, 2), "g saved")

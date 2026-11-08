@@ -1,0 +1,10 @@
+tool changes: 5   tower: 0.47 g of 5.80 g (8.2% of the filament goes to the tower)  [slicer trailer: 5.8 g]
+     z  change  tower mm3      g  slicer prime mm3
+  5.25   T0>T1       47.9   0.06                45
+  5.45   T1>T0       47.9   0.06                45
+  5.65   T0>T1       47.9   0.06                45
+  5.85   T1>T0       47.9   0.06                45
+  6.05   T0>T1       47.9   0.06                45
+tower walls on the 5 layers with a change: 142.6 mm3 = 0.18 g
+sparse layers (0 tower layers with no change): 0.0 mm3 = 0.0 g  [wipe_tower_no_sparse_layers = 1]
+tower footprint: X 12.4..45.6  Y 217.3..250.0  (33 x 33 mm)

@@ -90,10 +90,30 @@ end-of-print block is not a change; tower walls on a change layer are not sparse
 switches the configured column; `without_sparse_layers.py` removes only the no-change layers). The real files
 above are the second check: their numbers are reproduced by the command and the totals match the slicer's trailer.
 
+## Re-sliced in the real slicer: a model where the second colour starts above the bed
+
+The common two-colour print is a one-colour body with a logo or text on top. `examples/coaster` is that: a
+40 x 40 x 6 mm base (filament 1) with a 20 x 20 mm inlay in its last millimetre (filament 2), one object with
+two parts ([coaster.3mf](examples/coaster/coaster.3mf), written by `make_3mf.py`; a loose STL above the bed does
+not work, the CLI drops every object onto the plate). Sliced twice in Snapmaker Orca 2.4.1 on Linux, default U1
+profiles, `wipe_tower_no_sparse_layers` at 0 and at 1 ([docs/evidence/coaster](docs/evidence/coaster)):
+
+| | tower | sparse layers | walls on the 5 change layers | footprint | moves (Dry Run 2.1.0) | motion time |
+|---|---|---|---|---|---|---|
+| `= 0` | 1.44 g of 6.77 g (21.3%) | 25 layers, 885.0 mm3 = 1.1 g | 37.9 mm3 = 0.05 g | 38 x 37 mm | 19,099 | 792 s |
+| `= 1` | 0.47 g of 5.80 g (8.2%) | 0 layers | 142.6 mm3 = 0.18 g | 33 x 33 mm | 8,829 | 667 s |
+
+The 5 changes (z 5.25 to 6.05, 47.9 mm3 each, the 45 mm3 prime) are identical in both files. What the setting
+removes is the 25 tower layers under the logo (0.2 to 5.0 mm, where nothing changes): 1.1 g, a sixth of the
+print. It gives 0.13 g back as fuller walls on the layers that do change, so the file is 0.97 g lighter, 14% of
+the filament. The ledger reads both from the first file alone: `sparse layers (25 tower layers with no change)`
+is the number to look at before deciding to flip the key. The totals match the slicer's trailer in both files
+(6.77 g and 5.80 g), and `tests/test_ledger.py` re-reads these two files on every run. On the real firmware the
+cut is also 125 s of motion (16%), and the one scar the Dry Run reports (the final tool change at Z6.05, the Orca
+2.4.1 regression) is in both files: the setting does not touch the layers that change.
+
 ## Status
 
-Phase 2 project for the Snapmaker Innovation Fund, submitted as [forum topic 44126](https://forum.snapmaker.com/t/44126) on 2026-11-08; updates go in one comment there. Next: a model whose second colour
-starts a few millimetres up, sliced both ways, so the real slicer's cut can be compared with the measuring copy
-on a file that does have sparse layers; then a per-layer view of where the tower could be shorter.
+Phase 2 project for the Snapmaker Innovation Fund, submitted as [forum topic 44126](https://forum.snapmaker.com/t/44126) on 2026-11-08; updates go in one comment there. Next: a per-layer view of where the tower could be shorter.
 
 Unofficial, not affiliated with Snapmaker. GPL-3.0, same as the firmware it reads for.

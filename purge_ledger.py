@@ -35,12 +35,21 @@ def analyze(lines):
     purge_matrix = hdr.get("purge_in_prime_tower", "0") == "1"
     prime_volume = float(hdr.get("prime_volume", "0") or 0)
 
+    # wipe_tower_no_sparse_layers = 1 drops the tower only on layers with no tool change, so the tower
+    # filament outside a change block is split by layer: sparse layers vs walls on a layer that has a change.
+    change_layers, tower_layers, z = set(), set(), 0.0
+    for ln in lines:
+        s = ln.strip()
+        if s.startswith(";Z:"): z = float(s[3:])
+        elif "CP TOOLCHANGE START" in s: change_layers.add(z)
+        elif "WIPE_TOWER_START" in s: tower_layers.add(z)
+
     relative = True  # Snapmaker Orca emits M83; M82/G92 handled below
     last_e = 0.0
     tool = None
-    in_tower = in_change = in_grid = False
+    in_tower = in_change = False
     cur = None
-    changes, grid_mm, object_mm, z = [], 0.0, 0.0, 0.0
+    changes, grid_mm, walls_mm, object_mm, z = [], 0.0, 0.0, 0.0, 0.0
     bbox = [math.inf, math.inf, -math.inf, -math.inf]
     for ln in lines:
         s = ln.strip()
@@ -49,8 +58,6 @@ def analyze(lines):
             elif "WIPE_TOWER_END" in s: in_tower = False
             elif "CP TOOLCHANGE START" in s: in_change = True; cur = {"from": tool, "to": None, "z": z, "mm": 0.0}
             elif "CP TOOLCHANGE END" in s and cur: in_change = False; changes.append(cur); cur = None
-            elif "CP EMPTY GRID START" in s: in_grid = True
-            elif "CP EMPTY GRID END" in s: in_grid = False
             elif s.startswith(";Z:"): z = float(s[3:])
             continue
         code = s.split(";")[0].strip()
@@ -76,8 +83,8 @@ def analyze(lines):
                 v = float(v); i = 0 if ax == "X" else 1
                 bbox[i] = min(bbox[i], v); bbox[i + 2] = max(bbox[i + 2], v)
             if in_change and cur: cur["mm"] += de
-            elif in_grid: grid_mm += de
-            else: grid_mm += de  # tower perimeter/upkeep outside a change
+            elif z in change_layers: walls_mm += de  # tower walls on a layer that has a change
+            else: grid_mm += de  # sparse layer: perimeter + empty grid, no change on this layer
         else:
             object_mm += de
 
@@ -91,11 +98,13 @@ def analyze(lines):
         else: cfg = prime_volume
         rows.append({"z": round(c["z"], 2), "from": a, "to": b, "tower_mm3": round(mm3(c["mm"]), 1),
                      "tower_g": round(grams(c["mm"], b), 2), "configured_mm3": cfg})
-    tower_mm = sum(c["mm"] for c in changes if c["to"] is not None) + grid_mm
+    tower_mm = sum(c["mm"] for c in changes if c["to"] is not None) + grid_mm + walls_mm
     return {
         "tool_changes": len(rows), "changes": rows,
         "purge_matrix_in_tower": purge_matrix, "prime_volume_mm3": prime_volume,
         "sparse_layers_mm3": round(mm3(grid_mm), 1), "sparse_layers_g": round(grams(grid_mm, 0), 2),
+        "sparse_layers": sum(1 for zz in tower_layers if zz not in change_layers),
+        "change_layer_walls_mm3": round(mm3(walls_mm), 1), "change_layer_walls_g": round(grams(walls_mm, 0), 2),
         "tower_total_g": round(grams(tower_mm, 0), 2), "object_total_g": round(grams(object_mm, 0), 2),
         "tower_share_pct": round(100 * tower_mm / (tower_mm + object_mm), 1) if tower_mm + object_mm else 0.0,
         "tower_footprint_mm": None if bbox[0] is math.inf else [round(v, 1) for v in bbox],
@@ -110,7 +119,8 @@ def report(r):
     for c in r["changes"]:
         name = "T%s>T%s" % (c["from"], c["to"])
         out.append(f"{c['z']:>6} {name:>7} {c['tower_mm3']:>10} {c['tower_g']:>6} {c['configured_mm3']:>17.0f}")
-    out.append(f"sparse layers (tower upkeep without a change): {r['sparse_layers_mm3']} mm3 = {r['sparse_layers_g']} g"
+    out.append(f"tower walls on the {len(set(c['z'] for c in r['changes']))} layers with a change: {r['change_layer_walls_mm3']} mm3 = {r['change_layer_walls_g']} g")
+    out.append(f"sparse layers ({r['sparse_layers']} tower layers with no change): {r['sparse_layers_mm3']} mm3 = {r['sparse_layers_g']} g"
                f"  [wipe_tower_no_sparse_layers = {r['no_sparse_layers_setting']}]")
     if r["tower_footprint_mm"]:
         x0, y0, x1, y1 = r["tower_footprint_mm"]

@@ -5,144 +5,144 @@
    "z": 4.25,
    "from": 2,
    "to": 1,
-   "tower_mm3": 58.8,
-   "tower_g": 0.07,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 4.45,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 4.65,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 4.85,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 5.05,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 5.25,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 5.45,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 5.65,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 5.85,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 6.05,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 6.25,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 6.45,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 6.65,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 6.85,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 7.05,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 7.25,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 7.45,
    "from": 2,
    "to": 1,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   },
   {
    "z": 7.65,
    "from": 1,
    "to": 2,
-   "tower_mm3": 79.2,
-   "tower_g": 0.1,
+   "tower_mm3": 47.9,
+   "tower_g": 0.06,
    "configured_mm3": 45.0
   }
  ],
@@ -151,16 +151,17 @@
  "sparse_layers_mm3": 794.8,
  "sparse_layers_g": 1.0,
  "sparse_layers": 20,
- "change_layer_walls_mm3": 209.3,
- "change_layer_walls_g": 0.26,
- "tower_total_g": 3.04,
- "object_total_g": 26.65,
- "tower_share_pct": 10.2,
+ "change_layer_walls_mm3": 144.4,
+ "change_layer_walls_g": 0.18,
+ "tower_total_g": 2.27,
+ "object_total_g": 21.67,
+ "tower_share_pct": 9.5,
  "tower_footprint_mm": [
   8.1,
   130.1,
   45.9,
   167.3
  ],
- "no_sparse_layers_setting": "0"
+ "no_sparse_layers_setting": "0",
+ "slicer_total_g": 23.94
 }

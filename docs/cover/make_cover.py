@@ -39,15 +39,17 @@ sparse_g, sparse_mm3, sparse_n = led["sparse_layers_g"], led["sparse_layers_mm3"
 t0, t1 = field("as_sliced", "motion_s"), field("without_sparse", "motion_s")
 saved = t0 - t1
 assert changes == 18 and not led["purge_matrix_in_tower"]
-assert abs(sparse_g / tower_g - 1 / 3) < 0.03, sparse_g / tower_g
+sparse_share = round(100 * sparse_g / tower_g)
+assert 30 <= sparse_share <= 60, sparse_share  # the fidget: 1.0 g of a 2.27 g tower (44%)
+assert led["slicer_total_g"] == total_g, (led["slicer_total_g"], total_g)  # ledger total = the slicer's trailer
 assert 0 < saved < t0 and abs(share - 100 * tower_g / total_g) < 0.2
 
 CARDS = [
     ("18 colour changes", "Where the tower filament goes",
      ("%.2f g of %.2f g" % (tower_g, total_g), "%.1f%% of the filament, prime tower" % share, "#58a6ff", "Tower"),
-     ("%.0f mm³ per change" % per_change, "%.0f mm³ prime + walls of that layer" % led["prime_volume_mm3"], "#d29922", "On the U1")),
+     ("%.0f mm³ per change" % per_change, "the profile asks for %.0f mm³ of prime" % led["prime_volume_mm3"], "#d29922", "On the U1")),
     ("%d layers with no change" % sparse_n, "Tower upkeep nobody needs",
-     ("%.1f g" % sparse_g, "%.0f mm³, a third of the tower" % sparse_mm3, "#d29922", "Sparse layers"),
+     ("%.1f g" % sparse_g, "%.0f mm³, %d%% of the tower" % (sparse_mm3, sparse_share), "#d29922", "Sparse layers"),
      ("%d s saved" % saved, "firmware 2.1.0: %d s → %d s" % (t0, t1), "#3fb950", "wipe_tower_no_sparse_layers = 1")),
 ]
 

@@ -1,0 +1,7 @@
+sign-2.4.1-v241-nosparse.gcode: 34410 moves, 15 tool changes
+motion time 7126 s (no heating), about 48 s of it firmware tool-change motion
+  extruder: 91571 mm of filament
+  extruder1: 5620 mm of filament
+SCAR line 38910 (gcode, extruder1): [65.52, 143.71] -> [19.84, 224.85] at Z3.05 crosses 82.0 mm of finished surface, clearance 0.00 mm
+not exercised (no such hardware here): TIMELAPSE_TAKE_FRAME, DEFECT_DETECTION_DETECT, SM_PRINT_END_AUTO_UNLOAD_FILAMENT, SET_PURIFIER_MODE, TIMELAPSE_STOP
+rc=1

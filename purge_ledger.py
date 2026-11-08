@@ -24,6 +24,8 @@ def analyze(lines):
         if m and m.group(1) in ("filament_diameter", "filament_density", "flush_volumes_matrix", "flush_multiplier",
                                 "wipe_tower_no_sparse_layers", "purge_in_prime_tower", "prime_volume"):
             hdr[m.group(1)] = m.group(2).strip()
+    trailer = next((ln for ln in lines if ln.startswith("; total filament used [g] = ")), None)
+    slicer_total_g = float(trailer.split("=")[1]) if trailer else None
     diam = float(hdr.get("filament_diameter", "1.75").split(",")[0])
     dens = [float(v) for v in hdr.get("filament_density", "1.24").split(",")]
     area = math.pi * (diam / 2) ** 2
@@ -47,6 +49,10 @@ def analyze(lines):
     relative = True  # Snapmaker Orca emits M83; M82/G92 handled below
     last_e = 0.0
     tool = None
+    # A retraction pulls filament back; the next positive E only refills it. Counting that refill as
+    # extrusion inflated the helado tower by a third (3.04 g vs 2.2 g). Tracked per tool: each U1 head
+    # has its own filament, and the toolchange retraction (10 mm) is paid back by the SAME head next time.
+    retracted = {}
     in_tower = in_change = False
     cur = None
     changes, grid_mm, walls_mm, object_mm, z = [], 0.0, 0.0, 0.0, 0.0
@@ -77,6 +83,12 @@ def analyze(lines):
         if m:
             e = float(m.group(1)); de = e if relative else e - last_e
             if not relative: last_e = e
+        if de < 0:
+            retracted[tool] = retracted.get(tool, 0.0) - de
+            continue
+        refill = min(de, retracted.get(tool, 0.0))
+        retracted[tool] = retracted.get(tool, 0.0) - refill
+        de -= refill
         if de <= 0: continue
         if in_tower:
             for ax, v in XY_RE.findall(code):
@@ -109,12 +121,14 @@ def analyze(lines):
         "tower_share_pct": round(100 * tower_mm / (tower_mm + object_mm), 1) if tower_mm + object_mm else 0.0,
         "tower_footprint_mm": None if bbox[0] is math.inf else [round(v, 1) for v in bbox],
         "no_sparse_layers_setting": hdr.get("wipe_tower_no_sparse_layers"),
+        "slicer_total_g": slicer_total_g,
     }
 
 
 def report(r):
     out = [f"tool changes: {r['tool_changes']}   tower: {r['tower_total_g']} g of {r['tower_total_g'] + r['object_total_g']:.2f} g "
-           f"({r['tower_share_pct']}% of the filament goes to the tower)"]
+           f"({r['tower_share_pct']}% of the filament goes to the tower)"
+           + (f"  [slicer trailer: {r['slicer_total_g']} g]" if r.get("slicer_total_g") else "")]
     out.append(f"{'z':>6} {'change':>7} {'tower mm3':>10} {'g':>6} {'slicer prime mm3':>17}")
     for c in r["changes"]:
         name = "T%s>T%s" % (c["from"], c["to"])

@@ -1,0 +1,7 @@
+coaster-sparse0.gcode: 19099 moves, 5 tool changes
+motion time 792 s (no heating), about 17 s of it firmware tool-change motion
+  extruder: 5305 mm of filament
+  extruder1: 300 mm of filament
+SCAR line 21374 (gcode, extruder1): [125.32, 126.09] -> [19.96, 224.96] at Z6.05 crosses 17.5 mm of finished surface, clearance 0.00 mm
+not exercised (no such hardware here): TIMELAPSE_TAKE_FRAME, DEFECT_DETECTION_DETECT, SM_PRINT_END_AUTO_UNLOAD_FILAMENT, SET_PURIFIER_MODE, TIMELAPSE_STOP
+rc=1

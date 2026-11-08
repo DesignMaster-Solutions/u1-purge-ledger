@@ -69,7 +69,7 @@ the no-change layers). The real file above is the second check; its numbers are 
 
 ## Status
 
-Phase 2 project for the Snapmaker Innovation Fund, in progress. Next: the same project re-sliced in Snapmaker
+Phase 2 project for the Snapmaker Innovation Fund, submitted as [forum topic 44126](https://forum.snapmaker.com/t/44126) on 2026-11-08; updates go in one comment there. Next: the same project re-sliced in Snapmaker
 Orca with `wipe_tower_no_sparse_layers = 1`, run through the ledger and the Dry Run, to compare the real
 slicer output with the measuring copy above.
 

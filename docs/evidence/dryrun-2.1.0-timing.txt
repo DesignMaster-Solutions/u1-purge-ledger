@@ -1,0 +1,5 @@
+# U1 Dry Run (firmware 2.1.0, Docker, batch mode) on the helado sample, 2026-11-08 02:00Z
+# as sliced = examples/helado-pipewrx-orca-2.4.1.gcode from u1-dryrun
+# without_sparse = output of without_sparse_layers.py on the same file
+as_sliced moves=121206 motion_s=2226
+without_sparse moves=112581 motion_s=2102

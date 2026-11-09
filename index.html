@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>U1 Purge Ledger</title>
+<meta name="description" content="What each colour change really costs on a Snapmaker U1, read from the sliced G-code. Runs in your browser; nothing is uploaded.">
+<style>
+  :root { color-scheme: dark; --bg: #121417; --panel: #1b1f24; --line: #2c333b; --fg: #e6e9ee; --muted: #8b949e; --accent: #4cc38a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; } h2 { font-size: 1.1rem; margin: 28px 0 8px; }
+  p.lead { color: var(--muted); margin: 0 0 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+  #drop { display: block; border: 2px dashed var(--line); border-radius: 8px; padding: 28px 16px; text-align: center; color: var(--muted); cursor: pointer; }
+  #drop.over { border-color: var(--accent); color: var(--fg); }
+  #drop input { display: none; } #file-name { color: var(--accent); display: block; margin-top: 8px; min-height: 1.5em; }
+  button { background: var(--accent); color: #0b1a12; border: 0; border-radius: 6px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+  button:disabled { opacity: .5; cursor: wait; }
+  .row { display: flex; gap: 12px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+  #status { color: var(--muted); } #error { color: #f08c8c; }
+  pre { background: #0e1013; border: 1px solid var(--line); border-radius: 6px; padding: 12px; overflow: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  summary { cursor: pointer; color: var(--muted); }
+  footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; } footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>U1 Purge Ledger</h1>
+  <p class="lead">Drop a file sliced in Snapmaker Orca and see what the prime tower really costs: per tool change, on the layers where nothing changes, and the share of the whole print. The same <code>purge_ledger.py</code> as the CLI runs here, in your browser (Python via Pyodide); nothing is uploaded.</p>
+
+  <section class="panel">
+    <label id="drop">Drop a .gcode (or .gcode.gz) here or click to choose
+      <input type="file" id="file" accept=".gcode,.gz,text/plain">
+      <span id="file-name"></span>
+    </label>
+    <div class="row">
+      <button id="sample" class="ghost">Try the sample: coaster, 5 changes, sliced in Orca 2.4.1 (95 KB)</button>
+      <span id="status">Loading the Python runtime (about 10 MB, once)…</span>
+      <span id="error" role="alert"></span>
+    </div>
+  </section>
+
+  <div id="out" hidden>
+    <h2>Ledger</h2>
+    <pre id="table"></pre>
+    <div class="row" style="margin-top:8px"><button id="copy" class="ghost">Copy table</button><button id="copy-json" class="ghost">Copy JSON</button></div>
+    <details style="margin-top:12px"><summary>JSON (same numbers, for scripts)</summary><pre id="json"></pre></details>
+  </div>
+
+  <h2>Read the table</h2>
+  <p class="muted">On the U1 each toolhead has its own nozzle, so the tower only primes the incoming head: every change costs about the <code>prime_volume</code> of the profile (45 mm3 by default), not the flush matrix. The <em>sparse layers</em> line is the tower printed on layers with no change; <code>wipe_tower_no_sparse_layers = 1</code> in Snapmaker Orca removes it, and the ledger tells you from one file whether that setting will buy anything. The total is checked against the slicer's own <code>total filament used [g]</code> trailer.</p>
+
+  <footer>GPL-3.0. Source, CLI and evidence: <a href="https://github.com/DesignMaster-Solutions/u1-purge-ledger">github.com/DesignMaster-Solutions/u1-purge-ledger</a>. Forum topic: <a href="https://forum.snapmaker.com/t/44126">44126</a>.</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.5/full/pyodide.js" integrity="sha384-VR47TfKeAmT7vMej7bwOVg0tHTQLLGMSIpsXtFMCZG5OpKZSIXoSLtGY//qHcxc6" crossorigin="anonymous"></script>
+<script>
+const $ = (s) => document.querySelector(s);
+const SAMPLE = 'docs/evidence/coaster/coaster-2.4.1-sparse0.gcode.gz';
+let result = null;
+
+const ready = (async () => {
+  const [py, src] = await Promise.all([loadPyodide(), fetch('purge_ledger.py').then((r) => r.text())]);
+  py.FS.writeFile('purge_ledger.py', src);  // imported, not run: keeps the CLI's __main__ block out
+  py.runPython('import json, purge_ledger as pl');
+  $('#status').textContent = 'Ready.';
+  return py;
+})().catch((e) => { $('#status').textContent = ''; $('#error').textContent = 'Could not load the Python runtime: ' + e.message; throw e; });
+
+async function text(blob, name) {
+  const gz = name.endsWith('.gz') || (blob.size > 1 && new Uint8Array(await blob.slice(0, 2).arrayBuffer()).join() === '31,139');
+  const stream = gz ? blob.stream().pipeThrough(new DecompressionStream('gzip')) : blob.stream();
+  return new Response(stream).text();
+}
+
+async function run(blob, name) {
+  $('#error').textContent = ''; $('#file-name').textContent = name;
+  try {
+    const py = await ready;
+    $('#status').textContent = 'Reading…';
+    py.globals.set('gcode', await text(blob, name));
+    result = JSON.parse(py.runPython('res = pl.analyze(gcode.splitlines()); json.dumps([pl.report(res), res])'));
+    $('#table').textContent = result[0]; $('#json').textContent = JSON.stringify(result[1], null, 1);
+    $('#out').hidden = false; $('#status').textContent = 'Ready.';
+    document.body.dataset.ledger = String(result[1].tool_changes);  // test hook: tool changes of the last file
+  } catch (err) { $('#status').textContent = ''; $('#error').textContent = err.message; }
+}
+
+const drop = $('#drop');
+$('#file').addEventListener('change', (e) => e.target.files[0] && run(e.target.files[0], e.target.files[0].name));
+drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && run(e.dataTransfer.files[0], e.dataTransfer.files[0].name); });
+$('#sample').addEventListener('click', async () => {
+  $('#sample').disabled = true;
+  try { run(await (await fetch(SAMPLE)).blob(), SAMPLE.split('/').pop()); } finally { $('#sample').disabled = false; }
+});
+$('#copy').addEventListener('click', () => navigator.clipboard.writeText(result[0]));
+$('#copy-json').addEventListener('click', () => navigator.clipboard.writeText(JSON.stringify(result[1], null, 1)));
+</script>
+</body>
+</html>

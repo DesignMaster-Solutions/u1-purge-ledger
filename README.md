@@ -7,6 +7,8 @@ python3 purge_ledger.py plate_1.gcode          # table
 python3 purge_ledger.py plate_1.gcode --json   # same numbers for scripts
 ```
 
+Web: https://designmaster-solutions.github.io/u1-purge-ledger/ runs the same `purge_ledger.py` in the browser (Python via Pyodide, nothing is uploaded): drop the `.gcode` or `.gcode.gz`, or press the sample button to see the coaster from `docs/evidence`. Release zip of the CLI: https://github.com/DesignMaster-Solutions/u1-purge-ledger/releases.
+
 Snapmaker Orca marks the prime tower (`; WIPE_TOWER_START/END`), each tool change (`; CP TOOLCHANGE START/END`)
 and the tower upkeep on layers without a change (`; CP EMPTY GRID START/END`). The ledger sums the E words
 between those markers, converts them with the filament diameter and density written in the file header, and

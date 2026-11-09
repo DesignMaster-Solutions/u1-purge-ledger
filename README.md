@@ -114,6 +114,20 @@ is the number to look at before deciding to flip the key. The totals match the s
 cut is also 125 s of motion (16%), and the one scar the Dry Run reports (the final tool change at Z6.05, the Orca
 2.4.1 regression) is in both files: the setting does not touch the layers that change.
 
+## Check it against your U1
+
+The ledger is checked against the slicer's own `total filament used [g]` trailer on every run, not
+against a scale yet: I do not own a U1. If you do, this is the test that settles it, and it costs
+one print you were going to make anyway.
+
+1. Slice the multicolour model as usual, run the ledger on the exported `.gcode` (or drop it on the
+   [site](https://designmaster-solutions.github.io/u1-purge-ledger/)) and note the tower grams.
+2. Print it and weigh the prime tower on a 0.01 g kitchen scale. The ledger counts only what goes
+   into the tower; if your U1 collects ooze somewhere else, weigh that separately.
+3. Post both numbers, the ledger's and the scale's, in [topic 44126](https://forum.snapmaker.com/t/44126)
+   with the slicer version and the `prime_volume` you used. A few percent apart is normal (the grams
+   come from the slicer's `filament_density`); a third apart means the ledger is wrong and I will fix it.
+
 ## Status
 
 Phase 2 project for the Snapmaker Innovation Fund, submitted as [forum topic 44126](https://forum.snapmaker.com/t/44126) on 2026-11-08; updates go in one comment there. Next: a per-layer view of where the tower could be shorter.

@@ -1,5 +1,7 @@
 # U1 Purge Ledger
 
+[![ci](https://github.com/DesignMaster-Solutions/u1-purge-ledger/actions/workflows/ci.yml/badge.svg)](https://github.com/DesignMaster-Solutions/u1-purge-ledger/actions/workflows/ci.yml) `tests/test_ledger.py` on every push, Python 3.10/3.12/3.13
+
 What each colour change really costs on a Snapmaker U1, read from the sliced G-code. No printer needed.
 
 ```

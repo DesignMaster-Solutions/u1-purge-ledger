@@ -7,6 +7,7 @@ configured flush volume for that pair, and the tower footprint. Numbers come fro
 the markers Snapmaker Orca writes (``; WIPE_TOWER_START/END``, ``; CP TOOLCHANGE START/END``,
 ``; CP EMPTY GRID START/END``), not from the slicer's estimate.
 """
+import gzip
 import json
 import math
 import re
@@ -31,7 +32,9 @@ def analyze(lines):
     area = math.pi * (diam / 2) ** 2
     matrix = [float(v) for v in hdr["flush_volumes_matrix"].split(",")] if "flush_volumes_matrix" in hdr else None
     n_tools = int(round(math.sqrt(len(matrix)))) if matrix else 4
-    mult = float(hdr.get("flush_multiplier", "1") or 1) or 1.0  # Orca writes 0 when unset: means 1x
+    # shortcut: OrcaSlicer 2.5 writes one multiplier per extruder ("0.3,1,1,1"); the first is used. It only
+    # reaches a number when purge_in_prime_tower = 1; upgrade when a 2.5 file with that key at 1 shows up.
+    mult = float(hdr.get("flush_multiplier", "1").split(",")[0] or 1) or 1.0  # Orca writes 0 when unset: means 1x
     # U1 toolheads do not share a nozzle, so Snapmaker Orca purges the flush matrix in the tower only when
     # purge_in_prime_tower = 1; otherwise the tower only primes the incoming head (prime_volume, mm3).
     purge_matrix = hdr.get("purge_in_prime_tower", "0") == "1"
@@ -106,11 +109,12 @@ def analyze(lines):
     for c in changes:
         a, b = c["from"], c["to"]
         if b is None: continue  # end-of-print block has no incoming tool
-        if purge_matrix and matrix and a is not None and a != b: cfg = matrix[a * n_tools + b] * mult + prime_volume
+        if purge_matrix and matrix and a is not None and a != b and max(a, b) < n_tools: cfg = matrix[a * n_tools + b] * mult + prime_volume
         else: cfg = prime_volume
         rows.append({"z": round(c["z"], 2), "from": a, "to": b, "tower_mm3": round(mm3(c["mm"]), 1),
                      "tower_g": round(grams(c["mm"], b), 2), "configured_mm3": cfg})
     tower_mm = sum(c["mm"] for c in changes if c["to"] is not None) + grid_mm + walls_mm
+    if not tower_mm + object_mm: raise ValueError("no extrusion found: is this a sliced .gcode file?")
     return {
         "tool_changes": len(rows), "changes": rows,
         "purge_matrix_in_tower": purge_matrix, "prime_volume_mm3": prime_volume,
@@ -125,10 +129,18 @@ def analyze(lines):
     }
 
 
+def read_lines(path):
+    with open(path, "rb") as fh: raw = fh.read()
+    if raw[:2] == b"\x1f\x8b": raw = gzip.decompress(raw)  # .gcode.gz read as text gave an all-zero table
+    return raw.decode("utf-8", errors="replace").splitlines()
+
+
 def report(r):
     out = [f"tool changes: {r['tool_changes']}   tower: {r['tower_total_g']} g of {r['tower_total_g'] + r['object_total_g']:.2f} g "
            f"({r['tower_share_pct']}% of the filament goes to the tower)"
            + (f"  [slicer trailer: {r['slicer_total_g']} g]" if r.get("slicer_total_g") else "")]
+    if not r["tower_footprint_mm"]:
+        out.append("no prime tower in this file (one colour, or enable_prime_tower = 0): no colour change to charge")
     out.append(f"{'z':>6} {'change':>7} {'tower mm3':>10} {'g':>6} {'slicer prime mm3':>17}")
     for c in r["changes"]:
         name = "T%s>T%s" % (c["from"], c["to"])
@@ -145,6 +157,6 @@ def report(r):
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if a != "--json"]
     if len(args) != 1: sys.exit("usage: purge_ledger.py FILE.gcode [--json]")
-    with open(args[0], encoding="utf-8", errors="replace") as fh:
-        res = analyze(fh.read().splitlines())
+    try: res = analyze(read_lines(args[0]))
+    except ValueError as e: sys.exit(f"{args[0]}: {e}")
     print(json.dumps(res, indent=1) if "--json" in sys.argv else report(res))

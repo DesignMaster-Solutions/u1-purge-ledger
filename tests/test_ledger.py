@@ -79,3 +79,18 @@ saved = k0["tower_total_g"] - k1["tower_total_g"]
 assert abs(saved - (k0["slicer_total_g"] - k1["slicer_total_g"])) < 0.02, (saved, k0["slicer_total_g"], k1["slicer_total_g"])  # the whole difference is the tower
 assert k1["sparse_layers_g"] == 0 and k0["sparse_layers_g"] > saved, (k0["sparse_layers_g"], saved)  # the key drops 1.1 g of upkeep and spends ~0.13 g more on the change layers' walls
 print("ok real coaster", k0["sparse_layers_g"], "g of sparse layers ->", round(saved, 2), "g saved")
+
+# Files a U1 owner really drops in: OrcaSlicer 2.5.0-rc writes one flush multiplier per extruder and a matrix sized
+# to the filaments in use; a single-colour file has no tower at all; the CLI gets the .gcode.gz as often as the site.
+G25 = [l.replace("; purge_in_prime_tower = 0", "; purge_in_prime_tower = 1\n; flush_multiplier = 0.3,1,1,1")
+        .replace("0,100,100,100,100,0,100,100,100,100,0,100,100,100,100,0", "0,0,0,0") for l in G]
+r25 = analyze("\n".join(G25).splitlines())
+assert r25["tool_changes"] == 1 and r25["changes"][0]["configured_mm3"] == 45, r25  # 0 mm3 flush x 0.3 + 45 prime
+from purge_ledger import report, read_lines
+solo = analyze(["M83", "T0", ";Z:0.2", "G1 X10 Y10 E5.0"])
+assert solo["tool_changes"] == 0 and "no prime tower in this file" in report(solo), report(solo)
+assert "no prime tower" not in report(r), report(r)
+assert analyze(read_lines(os.path.join(EV, "coaster-2.4.1-sparse0.gcode.gz"))) == k0  # gzip by magic bytes, not by name
+try: analyze(["hello", "world"]); raise AssertionError("garbage accepted")
+except ValueError as e: assert "no extrusion" in str(e), e
+print("ok orca 2.5 header, no tower, gz, not a g-code")

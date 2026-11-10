@@ -94,6 +94,23 @@ end-of-print block is not a change; tower walls on a change layer are not sparse
 switches the configured column; `without_sparse_layers.py` removes only the no-change layers). The real files
 above are the second check: their numbers are reproduced by the command and the totals match the slicer's trailer.
 
+The same test covers what people actually drop in (added 2026-11-10 after running every sliced file we had):
+
+| File (public in [u1-dryrun/examples](https://github.com/DesignMaster-Solutions/u1-dryrun/tree/main/examples)) | Slicer | Changes | Tower | Ledger total | Slicer trailer |
+|---|---|---|---|---|---|
+| helado-pipewrx-orca-2.4.1 | Snapmaker Orca 2.4.1 | 18 | 2.27 g | 23.94 g | 23.94 g |
+| sign-orca-2.4.0 | Snapmaker Orca 2.4.0 | 15 | 1.62 g | 96.15 g | 96.14 g |
+| sign-orca-2.4.1 | Snapmaker Orca 2.4.1 | 15 | 1.48 g | 97.55 g | 97.55 g |
+| ring-orcaslicer-2.4.2 | OrcaSlicer 2.4.2 | 0 | no tower | 80.21 g | 80.21 g |
+| the same ring, not published | OrcaSlicer 2.5.0-rc | 0 | no tower | 80.22 g | 80.22 g |
+
+Three defects came out of that run and are fixed: the CLI read a `.gcode.gz` as text and printed an all-zero
+table (the site already unpacked it); a file from OrcaSlicer 2.5.0-rc stopped the ledger, on the site too, because
+that version writes one `flush_multiplier` per extruder; and a file with no tower printed an empty table without
+saying why. A file that is not G-code now gets one line instead of a table of zeros. Limit: with
+`purge_in_prime_tower = 1` on a 2.5 file the configured column uses the first multiplier only; no such file has
+been seen yet.
+
 ## Re-sliced in the real slicer: a model where the second colour starts above the bed
 
 The common two-colour print is a one-colour body with a logo or text on top. `examples/coaster` is that: a

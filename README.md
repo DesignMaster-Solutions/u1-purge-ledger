@@ -34,6 +34,9 @@ tool changes: 18   tower: 2.27 g of 23.94 g (9.5% of the filament goes to the to
   4.45   T1>T2       47.9   0.06                45
   ...
   7.65   T1>T2       47.9   0.06                45
+by pair, heaviest first:
+  T2>T1 x9 = 431.4 mm3 = 0.54 g
+  T1>T2 x9 = 431.4 mm3 = 0.54 g
 tower walls on the 18 layers with a change: 144.4 mm3 = 0.18 g
 sparse layers (20 tower layers with no change): 794.8 mm3 = 1.0 g  [wipe_tower_no_sparse_layers = 0]
 tower footprint: X 8.1..45.9  Y 130.1..167.3  (38 x 37 mm)
@@ -103,6 +106,16 @@ The same test covers what people actually drop in (added 2026-11-10 after runnin
 | sign-orca-2.4.1 | Snapmaker Orca 2.4.1 | 15 | 1.48 g | 97.55 g | 97.55 g |
 | ring-orcaslicer-2.4.2 | OrcaSlicer 2.4.2 | 0 | no tower | 80.21 g | 80.21 g |
 | the same ring, not published | OrcaSlicer 2.5.0-rc | 0 | no tower | 80.22 g | 80.22 g |
+| KOI fish, 3 colours, a U1 owner's project ([forum 43745/21](https://forum.snapmaker.com/t/43745/21)), not published | Snapmaker Orca 2.4.1 | 453 | 41.45 g | 437.71 g | 437.72 g |
+| Bounding Bunny plate 3, 4 colours, same owner, not published | Snapmaker Orca 2.4.1 | 186 | 20.52 g | 417.28 g | 417.29 g |
+
+The last two rows (added 2026-11-12) are full-size prints: 216 and 223 MB of G-code, 8.6 million lines, sliced by
+us from the owner's .3mf with the tower moved for another test. They changed two things. A 453-row table does not
+answer "which pair costs most", so the report now closes with one line per colour pair, heaviest first (KOI:
+`T2>T1 x124 = 8.52 g`, `T1>T2 x121 = 8.31 g`, `T0>T2 x104 = 7.17 g`, `T2>T0 x101 = 6.93 g`, `T1>T0 x3 = 0.24 g`;
+another 10.28 g is tower walls on the 246 layers with a change). And the file is now read line by line instead of
+held in memory: the KOI went from 1.4 GB to 18 MB of RAM on the CLI, and the site uses the same reader. Not
+checked: a file that size dropped on the site in a browser, and either print on a scale.
 
 Three defects came out of that run and are fixed: the CLI read a `.gcode.gz` as text and printed an all-zero
 table (the site already unpacked it); a file from OrcaSlicer 2.5.0-rc stopped the ledger, on the site too, because

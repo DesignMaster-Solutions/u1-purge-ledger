@@ -113,10 +113,18 @@ def analyze(lines):
         else: cfg = prime_volume
         rows.append({"z": round(c["z"], 2), "from": a, "to": b, "tower_mm3": round(mm3(c["mm"]), 1),
                      "tower_g": round(grams(c["mm"], b), 2), "configured_mm3": cfg})
+    pairs = {}  # a 453-change print needs the answer per colour pair, not 453 rows
+    for c in changes:
+        if c["to"] is None: continue
+        p = pairs.setdefault((c["from"], c["to"]), {"from": c["from"], "to": c["to"], "count": 0, "mm": 0.0})
+        p["count"] += 1; p["mm"] += c["mm"]
+    for p in pairs.values():  # grams from the pair's own volume, not from the rows' rounded grams
+        mm = p.pop("mm"); p["tower_mm3"] = round(mm3(mm), 1); p["tower_g"] = round(grams(mm, p["to"]), 2)
     tower_mm = sum(c["mm"] for c in changes if c["to"] is not None) + grid_mm + walls_mm
     if not tower_mm + object_mm: raise ValueError("no extrusion found: is this a sliced .gcode file?")
     return {
         "tool_changes": len(rows), "changes": rows,
+        "by_pair": sorted(pairs.values(), key=lambda p: -p["tower_mm3"]),
         "purge_matrix_in_tower": purge_matrix, "prime_volume_mm3": prime_volume,
         "sparse_layers_mm3": round(mm3(grid_mm), 1), "sparse_layers_g": round(grams(grid_mm, 0), 2),
         "sparse_layers": sum(1 for zz in tower_layers if zz not in change_layers),
@@ -129,10 +137,14 @@ def analyze(lines):
     }
 
 
-def read_lines(path):
-    with open(path, "rb") as fh: raw = fh.read()
-    if raw[:2] == b"\x1f\x8b": raw = gzip.decompress(raw)  # .gcode.gz read as text gave an all-zero table
-    return raw.decode("utf-8", errors="replace").splitlines()
+class read_lines:
+    """The file's lines, re-read on each pass: a 216 MB print held as a list took 1.4 GB, and the site runs this in a browser tab."""
+    def __init__(self, path):
+        self.path = path
+        with open(path, "rb") as fh: self.gz = fh.read(2) == b"\x1f\x8b"  # .gcode.gz read as text gave an all-zero table
+
+    def __iter__(self):
+        with (gzip.open if self.gz else open)(self.path, "rt", encoding="utf-8", errors="replace") as fh: yield from fh
 
 
 def report(r):
@@ -145,6 +157,9 @@ def report(r):
     for c in r["changes"]:
         name = "T%s>T%s" % (c["from"], c["to"])
         out.append(f"{c['z']:>6} {name:>7} {c['tower_mm3']:>10} {c['tower_g']:>6} {c['configured_mm3']:>17.0f}")
+    if r["by_pair"]:
+        out.append("by pair, heaviest first:")
+        out += ["  T%s>T%s x%d = %s mm3 = %s g" % (p["from"], p["to"], p["count"], p["tower_mm3"], p["tower_g"]) for p in r["by_pair"]]
     out.append(f"tower walls on the {len(set(c['z'] for c in r['changes']))} layers with a change: {r['change_layer_walls_mm3']} mm3 = {r['change_layer_walls_g']} g")
     out.append(f"sparse layers ({r['sparse_layers']} tower layers with no change): {r['sparse_layers_mm3']} mm3 = {r['sparse_layers_g']} g"
                f"  [wipe_tower_no_sparse_layers = {r['no_sparse_layers_setting']}]")

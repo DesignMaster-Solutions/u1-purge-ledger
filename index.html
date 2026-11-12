@@ -70,19 +70,14 @@ const ready = (async () => {
   return py;
 })().catch((e) => { $('#status').textContent = ''; $('#error').textContent = 'Could not load the Python runtime: ' + e.message; throw e; });
 
-async function text(blob, name) {
-  const gz = name.endsWith('.gz') || (blob.size > 1 && new Uint8Array(await blob.slice(0, 2).arrayBuffer()).join() === '31,139');
-  const stream = gz ? blob.stream().pipeThrough(new DecompressionStream('gzip')) : blob.stream();
-  return new Response(stream).text();
-}
-
 async function run(blob, name) {
   $('#error').textContent = ''; $('#file-name').textContent = name;
   try {
     const py = await ready;
     $('#status').textContent = 'Reading…';
-    py.globals.set('gcode', await text(blob, name));
-    result = JSON.parse(py.runPython('res = pl.analyze(gcode.splitlines()); json.dumps([pl.report(res), res])'));
+    // the file goes to Pyodide's disk and is read line by line: a 216 MB print held as a list of lines took 1.4 GB in CPython
+    py.FS.writeFile('/in.gcode', new Uint8Array(await blob.arrayBuffer()));
+    result = JSON.parse(py.runPython('res = pl.analyze(pl.read_lines("/in.gcode")); json.dumps([pl.report(res), res])'));
     $('#table').textContent = result[0]; $('#json').textContent = JSON.stringify(result[1], null, 1);
     $('#out').hidden = false; $('#status').textContent = 'Ready.';
     document.body.dataset.ledger = String(result[1].tool_changes);  // test hook: tool changes of the last file

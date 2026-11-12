@@ -94,3 +94,29 @@ assert analyze(read_lines(os.path.join(EV, "coaster-2.4.1-sparse0.gcode.gz"))) =
 try: analyze(["hello", "world"]); raise AssertionError("garbage accepted")
 except ValueError as e: assert "no extrusion" in str(e), e
 print("ok orca 2.5 header, no tower, gz, not a g-code")
+
+# A real 453-change print (KOI fish, three colours) gave a 453-row table and no answer to "which pair costs most":
+# the report closes with one line per colour pair, heaviest first, and the pairs add up to the per-change rows.
+GP = G + ["T0", "; CP TOOLCHANGE START", "; WIPE_TOWER_START", "T1", "G1 X20 Y150 E6.0", "; WIPE_TOWER_END", "; CP TOOLCHANGE END",
+          "; CP TOOLCHANGE START", "; WIPE_TOWER_START", "T0", "G1 X20 Y150 E1.0", "; WIPE_TOWER_END", "; CP TOOLCHANGE END"]
+rp = analyze(GP)
+assert [(p["from"], p["to"], p["count"]) for p in rp["by_pair"]] == [(0, 1, 2), (1, 0, 1)], rp["by_pair"]
+assert abs(rp["by_pair"][0]["tower_mm3"] - 10.0 * AREA) < 0.11, rp["by_pair"]  # 4.0 + 6.0 mm of filament
+assert abs(sum(p["tower_mm3"] for p in rp["by_pair"]) - sum(c["tower_mm3"] for c in rp["changes"])) < 0.11, rp
+tail = report(rp).splitlines()
+assert any(l.startswith("by pair") for l in tail) and tail.index(next(l for l in tail if "T0>T1 x2" in l)) < tail.index(next(l for l in tail if "T1>T0 x1" in l)), report(rp)
+assert "by pair" not in report(solo), report(solo)
+print("ok by pair")
+
+# The KOI file is 216 MB / 8.6 M lines: held as a list it took 1.4 GB, and the site runs in a browser tab.
+# read_lines re-reads the file on each pass instead of keeping it.
+lazy = read_lines(os.path.join(EV, "coaster-2.4.1-sparse0.gcode.gz"))
+assert not isinstance(lazy, list) and sum(1 for _ in lazy) == sum(1 for _ in lazy) > 1000, type(lazy)
+print("ok lazy read")
+
+# The pair's grams come from its own volume: summing the rows' rounded grams put the Bunny's T0>T1 at 3.54 g for 3.13 g.
+blk = ["; CP TOOLCHANGE START", "; WIPE_TOWER_START", "T1", "G1 X20 Y150 E1.4", "; WIPE_TOWER_END", "; CP TOOLCHANGE END", "T0"]
+rr = analyze(["M83", "T0", ";Z:0.2", "G1 X10 Y10 E5.0"] + blk * 10)
+assert rr["by_pair"][0]["count"] == 10 and rr["changes"][0]["tower_g"] == 0.0, rr["by_pair"]
+assert rr["by_pair"][0]["tower_g"] == round(14.0 * AREA * 1.24 / 1000, 2) == 0.04, rr["by_pair"]
+print("ok pair grams")
